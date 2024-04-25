@@ -1,0 +1,132 @@
+\documentclass{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage{listings}
+\usepackage{booktabs}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{bm}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage[export]{adjustbox}
+\usepackage{svg}
+
+\usetheme{Madrid}
+\definecolor{mlpblue}{rgb}{0.1, 0.14, 0.24}
+
+\useoutertheme{infolines} % Alternatively: miniframes, infolines, split
+\useinnertheme{circles}
+\usecolortheme[named=mlpblue]{structure}
+
+\lstset{basicstyle=\footnotesize\ttfamily,breaklines=true}
+
+%------------------------------------------------------------
+%This block of code defines the information to appear in the
+%Title page
+\title[Omnipredictors]{\href{https://arxiv.org/abs/2109.05389}{Omnipredictors}\thanks{Gopalan, Kalai, Reingold, Sharan, Wieder}: One Predictor to Rule Them All}
+
+\subtitle{Heavily adapted from \href{https://youtu.be/DCPRdL03-dk}{P.~Gopalan's Talk} at IAS}
+
+\author[Machine Learning @ Purdue] % optional
+{J.~Setpal} 
+
+\date{April 18, 2024}
+
+\titlegraphic{\includegraphics[width=7cm]{../../shared/logo-long.pdf}}
+
+%End of title page configuration block
+%------------------------------------------------------------
+
+%The next block of commands puts the table of contents at the 
+%beginning of each section and highlights the current section:
+
+\AtBeginSection[]
+{
+  \begin{frame}
+    \frametitle{Outline}
+    \tableofcontents[currentsection]
+  \end{frame}
+}
+% ------------------------------------------------------------
+
+
+\begin{document}
+
+\frame{\titlepage}
+
+
+%---------------------------------------------------------
+% This block of code is for the table of contents after
+% the title page
+\begin{frame}
+\frametitle{Outline}
+\tableofcontents
+\end{frame}
+%---------------------------------------------------------
+
+\section{Challenge Statement}
+\begin{frame}{Supervised Learning Synopsis}
+	We'll start with an \textit{overview} of supervised learning paradigm:
+	\begin{enumerate}[label=\arabic*.]
+		\item Dataset $\mathcal{D} := \{(x_i, y_i)\}^N_{i=1};~N \ll \infty;~\mathcal{D} \sim $ ``Real World'' \pause
+		\item Parameterized model $f_{\bm{\theta}} : \mathcal{X} \rightarrow \mathcal{Y}$ \pause
+		\item Objective: Train $\bm{\theta}$ s.t. $f_{\bm{\theta}}(x) = \hat{y} \approx y$ \pause
+	\end{enumerate}
+	How do we mathematically encode $\hat{y} \approx y$? \pause A loss (distance) function!
+	\begin{enumerate}[label=\arabic*.]
+			\setcounter{enumi}{3}
+		\item Loss function $L : \mathcal{Y} \times \mathcal{Y} \rightarrow \mathbb{R};~L(\hat{y}, y) \approx 0~\text{iff}~\hat{y} \approx y; L$ is continuous. \pause
+	\end{enumerate}
+	How can we update our weights to optimize against this loss function? \pause
+	\begin{enumerate}[label=\arabic*.]
+			\setcounter{enumi}{4}
+		\item Gradient Descent! $\bm{\theta} = \bm{\theta} + \alpha \cdot \frac{\partial L}{\partial \bm{\theta}}$
+	\end{enumerate}
+	Iterate (5) until convergence. \pause \newline \\
+	$L$ is minimized over $\mathcal{D}$, not over the real world. \pause This is \textbf{empirical risk}:
+	\begin{gather}
+		\min_{\bm{\theta}} \frac{1}{N}\sum^N_{i=1} L(f_{\bm{\theta}}(x_i), y_i)
+	\end{gather}
+\end{frame}
+
+\begin{frame}{Generalization Error}
+	We also split $\mathcal{D}$ into training, validation, test splits to minimize overfitting. \pause \newline \\
+	Usually $L_{valid} \not\approx L_{train}$ after training. That's our generalization gap.
+	\begin{center}
+		\includegraphics[width=.8\textwidth]{img/generalization}
+	\end{center}
+\end{frame}
+
+\begin{frame}{Challenge Statement}
+	\textbf{Problem:} Different loss functions typically have divergent geometries. \pause \newline \\
+	However, these functions.
+
+	If we were to 
+	We can evaluate this empirically using the 
+	\textbf{Omnipredictors} produces a 
+\end{frame}
+
+\section{Background \& Intuition}
+\begin{frame}{Multigroup Fairness}
+\end{frame}
+
+\begin{frame}{Multicalibration}
+\end{frame}
+
+\section{Omnipredictors}
+\begin{frame}{}
+\end{frame}
+
+\begin{frame}{Further Reading}
+\end{frame}
+
+\begin{frame}{Thank you!}
+	\begin{center}
+		Have an awesome rest of your day!
+	\end{center}
+	\begin{center}
+		\textbf{Slides:} {\small \url{https://cs.purdue.edu/homes/jsetpal/slides/omnipredictors.pdf}}
+		\textbf{Code:} {\small \url{https://cs.purdue.edu/homes/jsetpal/slides/omnipredictors.pdf}}
+	\end{center}
+\end{frame}
+
+\end{document}

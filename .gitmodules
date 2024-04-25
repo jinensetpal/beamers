@@ -1,0 +1,3 @@
+[submodule "omnipredictors/code"]
+	path = omnipredictors/code
+	url = git@github.com:jinensetpal/omnipredictors.git
