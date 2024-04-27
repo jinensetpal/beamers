@@ -63,10 +63,10 @@
 % \end{frame}
 %---------------------------------------------------------
 
-\begin{frame}{Supervised Learning Synopsis}
+\begin{frame}{ERM Synopsis}
 	We'll start with an \textit{overview} of supervised learning paradigm:
 	\begin{enumerate}[label=\arabic*.]
-		\item Dataset $\mathcal{D} := \{(x_i, y_i)\}^N_{i=1};~N \ll \infty;~\mathcal{D} \sim $ ``Real World'' \pause
+		\item Dataset $\mathcal{D} := \{(x_i, y_i)\}^N_{i=1};~1 \ll N \ll \infty;~\mathcal{D} \sim $ ``Real World'' \pause
 		\item Parameterized model $f_{\bm{\theta}} : \mathcal{X} \rightarrow \mathcal{Y}$ \pause
 		\item Objective: Train $\bm{\theta}$ s.t. $f_{\bm{\theta}}(x) = \hat{y} \approx y$ \pause
 	\end{enumerate}
@@ -78,7 +78,7 @@
 	How can we update our weights to optimize against this loss function? \pause
 	\begin{enumerate}[label=\arabic*.]
 			\setcounter{enumi}{4}
-		\item Gradient Descent! $\bm{\theta} = \bm{\theta} + \alpha \cdot \frac{\partial L}{\partial \bm{\theta}}$
+		\item Gradient Descent! $\bm{\theta} = \bm{\theta} - \alpha \cdot \frac{\partial L}{\partial \bm{\theta}}$
 	\end{enumerate}
 	Iterate (5) until convergence. \pause \newline \\
 	$L$ is minimized over $\mathcal{D}$, not over the real world. \pause This is \textbf{empirical risk}:
@@ -87,12 +87,14 @@
 	\end{gather}
 \end{frame}
 
-\begin{frame}{Generalization Error}
-	We also split $\mathcal{D}$ into training, validation, test splits to minimize overfitting. \pause \newline \\
-	Usually $L_{valid} \not\approx L_{train}$ after training. That's our generalization gap.
-	\begin{center}
-		\includegraphics[width=.8\textwidth]{img/generalization}
-	\end{center}
+\begin{frame}{Agnostic Boosting}
+	Probably Approximately Correct (PAC) Learning is a \textit{generalization} of ERM. \pause \newline \\
+
+	We define a PAC-learnable concept $C$ if a learner $L$ can with $\text{Pr}=1-\delta$ output hypothesis $h \in \mathcal{H}$ s.t. error${}_{\mathcal{D}}(h)$ $\leq \epsilon$ with required samples $|\mathcal{D}| \in f(\epsilon, \delta, n) = \frac{1}{\epsilon^a} + \frac{1}{\delta^b} + |\mathcal{H}|^c$. \pause \newline \\
+
+	One interpretation of PAC allows an \underline{arbitrary concept function}, that learns by comparing error in the learner's hypothesis against the best predictor in a \underline{pre-specified comparison class of predictors}. \pause This is \textbf{Agnostic Learning}. \pause \newline \\
+
+	Boosting a weak agnostic learner is a critical aspect of the Omnipredictors approach to learning ``multicalibrated partitions'' (we'll get to this soon).
 \end{frame}
 
 \begin{frame}{Challenge Statement}
@@ -109,6 +111,24 @@
 		\end{cases}
 	\end{gather} \pause
 	\textbf{Omnipredictors} provides a framework for rigorous guarantees, deriving $\tilde{p} \approx p^*$: a predictor that is able to \textit{simultaneously minimize} a family of \underline{convex loss functions}.
+\end{frame}
+
+\begin{frame}{Accuracy in Expectation \& Calibration}
+	We subject the model's predicted probabilities to `sanity checks' \pause -- these are classic \textbf{interpretability notions}:
+	\begin{enumerate}[label=\alph*.]
+		\item $\tilde{p}$ is \underline{accurate in expectation} if:
+			\begin{gather}
+				\mathbb{E}[\tilde{p}(x)] = \mathbb{E}[y]
+			\end{gather} \pause
+			\vspace{-1em}
+		\item $\tilde{p}$ is \underline{calibrated} if:
+			\begin{gather}
+				\mathbb{E}[y|\tilde{p}(x)] = \tilde{p}(x)
+			\end{gather} % when forecaster say 0.1 prob rain, it should rain 10% of the time
+	\end{enumerate} \pause
+	These may be \textbf{orthogonal to model performance}. \pause \newline \\
+
+	``If you posit a more complex view of the world, I will subject you to a more rigorous test.'' -- P.~Gopalan.
 \end{frame}
 
 \begin{frame}{Multigroup Fairness}
@@ -131,25 +151,27 @@
 	One notion of fairness stipulates equal risk for every subgroup. However, finding subgroups is hard for \underline{high-dimensional data}.
 \end{frame}
 
-\begin{frame}{Multiaccuracy \& Multigroup Fairness}
+\begin{frame}{Multiaccuracy \& Multicalibration}
+	Can we elicit more information from our model while \textit{retaining} calibration? \pause Here, we introduce \textbf{multiaccuracy} and \textbf{multicalibration}. \pause
 	\begin{columns}
 		\begin{column}{0.3\textwidth}
 			\begin{center}
 				\includegraphics[width=.8\textwidth]{img/partitions}
 			\end{center}
-		\end{column} \pause
+		\end{column}
 		\begin{column}{0.7\textwidth}
-			Let $C$ be the collection of subsets. We probe it further for correlations. \pause \newline \\
+
+			Let $C = \{c: \mathcal{X} \rightarrow [-1, 1]\}$ be a collection of subsets, generalized as \textbf{real-valued functions}. \pause \newline \\
 
 			$\tilde{p}$ is $(C, \alpha)$-multiaccurate if:
 			\begin{gather}
 				\max_{c \in C} |\mathbb{E}[c(x)(y-\tilde{p}(x))]| \leq \alpha
-			\end{gather} \pause
+			\end{gather} \pause % can c find a pattern in the errors (y-p(x))
 			$\tilde{p}$ is $(C, \alpha)$-multicalibrated if:
 			\begin{gather}
-				\max_{c \in C} E[|\mathbb{E}[c(x)(y-\tilde{p}(x))]|] \leq \alpha
+				\max_{c \in C} \mathbb{E}[|\mathbb{E}[c(x)(y-\tilde{p}(x))]|] \leq \alpha
 			\end{gather} \pause
-			If we can find correlation with the error, there's some advantage to be gained. We minimize this to train a \textbf{weak agnostic learner}.
+			If we can find correlations with the error, there's some advantage to be gained. We enforce multicalibration to train the \textbf{weak agnostic learner}.
 		\end{column}
 	\end{columns}
 \end{frame}
@@ -157,30 +179,44 @@
 \begin{frame}{Omnipredictors}
 	If we know $p^*$, it is easy for us take take the optimal action. \pause \newline \\
 
-	For $y \in \{0, 1\},~y \sim \text{Bernoulli}(p^*)$. We denote optimal action $t := k_\ell^* \circ p^*$\pause \newline \\
+	For $y \in \{0, 1\},~y \sim \text{Bernoulli}(p^*)$. We denote optimal action $t := k_\ell^* \circ p^*$ as post-processing function. \pause \newline \\
 
-	This paper connects multigroup fairness with the notion of a weak agnostic learner, to formulate $(L, C)$-omnipredictors. \pause Specifically, it trains $g_{\bm{\theta}} \approx p^*$. \pause \newline \\
+	This paper connects multigroup fairness with the notion of a weak agnostic learner, to formulate $(L, C)$-omnipredictors. \pause \newline \\
 
 	\textbf{Intuitively}: the idea is to \textit{extract the predictive power} of the data. \pause \newline \\
 
-	Let $L_{cvx}$ be a set of Lipschitz, convex, bounded losses. \pause If $f_{\bm{\theta}}$ is $C$-multicalibrated with some error $\alpha$, it is an $(L_{cvx}, C, \alpha)$-omnipredictor. \pause \newline \\
+	Let $L_{cvx}$ be a set of Lipschitz, convex, bounded losses. \pause If $\tilde{p}$ is $C$-multicalibrated with some error $\alpha$, it is an $(L_{cvx}, C, \alpha)$-omnipredictor. \pause \newline \\
 
 	Multicalibration implies omniprediction for all convex loss functions.
 \end{frame}
 
-\begin{frame}{Training Agnostic Predictors}
-	We can use this framework to train a predictor s.t. a new model trained just on \underline{one loss function} performs equivalently to the omnipredictor.
-	\begin{gather}
-		C = \{c: \mathcal{X} \rightarrow \mathcal{Y}\} \\
-		w: (0,1] \rightarrow (0, 1]~s.t.~w(\alpha) \leq \alpha
-	\end{gather} \pause
-	We then train with the following objective:
-	\begin{gather}
-		\min_{\bm{\theta}} \textbf{Cov}_{\mathcal{D}}[c(x), y]
-	\end{gather}
-	Then, with probability $1-\delta$ the weak learner returns $c$ s.t. $\textbf{Cov}_{\mathcal{D}}[c(x), y] \geq w(\alpha)$. \pause \newline \\
+\begin{frame}{Proof of Optimality}
+	As proof for optimality, we evaluate binary classification. Assumptions:
+	\begin{enumerate}[label=\arabic*.]
+		\item $p^*$ is boolean.
+		\item Perfect Mutlicalibration: $\mathbb{E}[c(x)(y^*-v)|\tilde{p}(x)=v]=0,\forall v \in [0, 1], c \in C $
+	\end{enumerate} \pause
+	\begin{center}
+		\includegraphics[width=.97\textwidth]{img/proof}
+	\end{center}
+\end{frame}
 
-	We use this to compute an $\alpha$-multicalibrated partition by a layered branching program that runs in $\mathcal{O}(\frac{l}{w(\alpha/2)})^{\mathcal{O}(l)}$.
+\begin{frame}{Training Agnostic Learners} % TODO: fix
+	We can train an agnostic learner using the following setup:
+	\begin{gather}
+		\mathcal{H} : \mathcal{X} \rightarrow \{0, 1\} \\
+		\mathcal{D} : \mathcal{X} \times \{0, 1\} \\
+		\ell(h \in \mathcal{H}) = \text{Pr}_{(x,y) \sim \mathcal{D}}[h(x) \neq y] = \mathbb{E}_{(x,y) \sim \mathcal{D}}[\ell_1(y, h(x))] \\
+		OPT(\mathcal{H}) = \min_{h \in \mathcal{H}} \ell(h)
+	\end{gather} \pause
+	An agnostic learner for $\mathcal{H}$ produces $f$ s.t. $\ell(f) \leq \text{OPT}(\mathcal{H}) + \epsilon$. \pause \newline \\
+
+	We $(\epsilon, W)$-approximate $\mathcal{H}$ by $\mathcal{C}$ if $\forall h \in \mathcal{H}, \epsilon > 0$, $g_w \in \text{Lin}_{\mathcal{C}}(W)$:
+	\begin{gather}
+		\mathbb{E}_{(x,y) \sim \mathcal{D}}[|g_w(x) - h(x)|] \leq \epsilon
+	\end{gather}
+
+	If partition $\mathcal{S}$ is $\frac{\epsilon}{2W}$-approximately multicalibrated for $\mathcal{C}, \mathcal{D}$, $\ell(h_{\ell_1}^{\mathcal{S}}) \leq \text{OPT}(\mathcal{H}) + \epsilon$ and can identify multicalibrated partitions.
 \end{frame}
 
 \begin{frame}{Thank you!}
