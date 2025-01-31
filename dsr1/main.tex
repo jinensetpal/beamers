@@ -87,8 +87,8 @@
 	We start with the standard clipped surrogate objective introduced in PPO:
 	\begin{gather}
 		\begin{split}
-			&\mathcal{J}_{PPO}(\theta) := \mathbb{E}[q \sim P(Q), \{o_i\}^G_{i=1} \sim \pi_{\theta_{old}}(O | q)] \\
-			&\frac{1}{G} \sum^G_{i=1} \min \left(\frac{\pi_{\theta_{old}}(o_i | q, o_{<i})}{\pi_\theta(o_i | q, o_{<i})} A_i, \clip \left( \frac{\pi_{\theta_{old}}(o_i | q, o_{<i})}{\pi_\theta(o_i | q, o_{<i})}, 1 \pm \varepsilon \right)  A_i \right) \\
+			&\mathcal{J}_{PPO}(\theta) := \mathbb{E}[q \sim P(Q), o \sim \pi_{\theta_{old}}(O | q)] \\
+			&\frac{1}{|o|} \sum^{|o|}_{i=1} \min \left(\frac{\pi_{\theta_{old}}(o_i | q, o_{<i})}{\pi_\theta(o_i | q, o_{<i})} A_i, \clip \left( \frac{\pi_{\theta_{old}}(o_i | q, o_{<i})}{\pi_\theta(o_i | q, o_{<i})}, 1 \pm \varepsilon \right)  A_i \right)
 		\end{split}
 	\end{gather} \pause
 
@@ -273,7 +273,8 @@
 \begin{frame}{What \underline{Didn't} Work \& Why}
 	\textbf{Process Reward Model}: Prone to reward hacking, requires fine-grained setup, evaluating intermediate steps are challenging for general reasoning. \pause \newline \\
 
-	\textbf{Monte-Carlo Tree Search}: Enable explore the solution space systematically; however here search space is ill-degined and very restrictive. \pause \newline \\
+	\textbf{Monte-Carlo Tree Search}: Enable explore the solution space systematically; but search space is ill-designed and scaling is restrictive. \pause \newline \\
+
 	Setting restrictions leads to spurious local optima, and also requires a pre-trained value model which is expensive. \pause \newline \\
 
 	\begin{block}{Aside}
