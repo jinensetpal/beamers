@@ -27,12 +27,12 @@
 
 \subtitle{Demistifying black boxes with \textbf{Sparse AutoEncoders}\thanks{\tiny \url{https://transformer-circuits.pub/2023/monosemantic-features/}}\thanks{\tiny \url{https://arxiv.org/abs/2404.16014}}\thanks{\tiny{\url{https://www.arena.education/}}}}
 
-\author[ECE ML Reading Group] % optional
+\author[Machine Learning @ Purdue] % optional
 {J.~Setpal} 
 
-\date{January 29, 2025}
+\date{\today}
 
-% \titlegraphic{\includegraphics[width=7cm]{../shared/logo-long.pdf}}
+\titlegraphic{\includegraphics[width=7cm]{../shared/logo-long.pdf}}
 
 %End of title page configuration block
 %------------------------------------------------------------
@@ -166,7 +166,7 @@
 	\end{gather} \pause
 	We can motivate our objective transformation by linear factorization:
 	\begin{gather}
-		x^j \approx b + \sum_i f_i(x^j)d_i \\
+		x^j \approx b_D + \sum_i f_i(x^j)d_i \\
 		f_i = \sigma_{ReLU}(W_E(x-b_D)+ b_E)
 	\end{gather}
 	where $d_i$ is the `feature direction' represented as columns of the $W_D$. \pause \newline \\
