@@ -1,0 +1,564 @@
+\documentclass{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage{algorithm,algpseudocode}
+\usepackage{xmpmulti}
+\usepackage{listings}
+\usepackage{booktabs}
+\usepackage{nicefrac}
+\usepackage{pgfplots}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usepackage{bbm}
+\usepackage{bm}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage[export]{adjustbox}
+\usepackage{svg}
+
+\usetheme{Madrid}
+\definecolor{mlpblue}{rgb}{0.1, 0.14, 0.24}
+
+\pgfplotsset{colormap={mine}{[1cm] rgb255(0cm)=(255,0,0) rgb255(1cm)=(0,0,255)}}
+
+\useoutertheme{infolines} % Alternatively: miniframes, infolines, split
+\useinnertheme{circles}
+\usecolortheme[named=mlpblue]{structure}
+
+\lstset{basicstyle=\footnotesize\ttfamily,breaklines=true}
+
+%------------------------------------------------------------
+%This block of code defines the information to appear in the
+%Title page
+\title[Optimal Transport]{Introduction to Optimal Transport\thanks{\href{https://arxiv.org/abs/1803.00567}{Peyré, Cuturi.~[Arxiv 2020]}}\thanks{\href{https://arxiv.org/abs/1701.07875}{Arjovsky, et.~al.~[Arxiv 2017]}}\thanks{\href{https://arxiv.org/abs/2006.07229}{Heitz, et.~al.~[CVPR 2021]}}}
+
+\subtitle{``Moving Sandcastles in the Air''}
+
+\author[ECE ML Reading Group] % optional
+{J.~Setpal} 
+
+\date{March 26, 2025}
+
+\titlegraphic{\includegraphics[width=6cm]{img/mrmonge.png}}
+
+%End of title page configuration block
+%------------------------------------------------------------
+
+%The next block of commands puts the table of contents at the 
+%beginning of each section and highlights the current section:
+
+\AtBeginSection[]
+{
+  \begin{frame}
+    \frametitle{Outline}
+    \tableofcontents[currentsection]
+  \end{frame}
+}
+% ------------------------------------------------------------
+
+
+\begin{document}
+
+\frame{\titlepage}
+
+
+%---------------------------------------------------------
+% This block of code is for the table of contents after
+% the title page
+\begin{frame}
+\frametitle{Outline}
+\tableofcontents
+\end{frame}
+%---------------------------------------------------------
+
+\section{Motivation}
+
+\begin{frame}{Why Should We Care? ($\nicefrac{1}{3}$)}
+	Monge likes playing with sandcastles. \newline \\
+
+	He wonders, ``What is the most efficient way to move this marvellous sandcastle from the beach to my house?'' \newline \\
+
+	And \textbf{Optimal Transport} was born. \pause \newline \\
+
+	Why should you care:
+	\begin{enumerate}[label=\arabic*.]
+		\item You like playing with sandcastles. \pause
+		\item You're interested in any of the following research foci:
+			\begin{enumerate}[label=\alph*.]
+				\item \bf Neural Style Transfer:
+					\begin{center}
+						\includegraphics[width=.6\textwidth]{img/styletransfer.png}
+					\end{center}
+			\end{enumerate}
+	\end{enumerate}
+\end{frame}
+
+\begin{frame}{Why Should We Care? ($\nicefrac{2}{3}$)}
+	\begin{enumerate}[label=\arabic*.]
+		\setcounter{enumi}{1}
+		\item
+			\begin{enumerate}[label=\alph*.]
+				\setcounter{enumii}{1}
+				\item \textbf{Sentence Similarity} (Word Mover's Distance):
+					\begin{center}
+						\includegraphics[width=.6\textwidth]{img/wmd.png}
+					\end{center} \pause
+				\item \textbf{Graph Neural Networks} (Better Representation Learning):
+					\begin{center}
+						\includegraphics[width=.7\textwidth]{img/gnn.png}
+					\end{center}
+			\end{enumerate}
+	\end{enumerate}
+\end{frame}
+
+\begin{frame}{Why Should We Care? ($\nicefrac{3}{3}$)}
+	\begin{enumerate}[label=\arabic*.]
+		\setcounter{enumi}{1}
+		\item
+			\begin{enumerate}[label=\alph*.]
+			\setcounter{enumii}{3}
+				\item \textbf{Medical Imaging} (Gray Matter Tissue loss for Dementia):
+					\begin{center}
+						\includegraphics[width=.8\textwidth]{img/ctscan.jpg}
+					\end{center} \pause
+					\vspace{1.5em}
+				\item \bf Robust Point-Cloud Matching:
+					\begin{center}
+						\includegraphics[width=.8\textwidth]{img/pcm.png}
+					\end{center}
+			\end{enumerate}
+	\end{enumerate}
+\end{frame}
+
+\section{Monge Problem, Kantorovich Relaxation}
+
+\begin{frame}{Geometry Induced by OT on the Probability Simplex}
+	We start with the probability simplex:
+	\begin{gather}
+		\Sigma_n := \left\{ \bm{a} \in \mathbb{R}^n_+ : \sum^n_{i=1} \bm{a}_i = 1 \right\}
+	\end{gather} \pause
+
+	Over which we define a discrete probability measure:
+	\begin{gather}
+		\alpha(x) = \sum^n_{i=1} \bm{a}_i \chi_{x_i}(x), \quad \text{s.t.} \quad \bm{a} \in \Sigma_n
+	\end{gather} \pause
+
+	\begin{block}{\bf Aside}
+		OT literature deals with both discrete and continuous measures using the same framework. We'll focus mostly on the discrete setting.
+	\end{block}
+\end{frame}
+
+\begin{frame}{Monge's Assignment Problem ($\nicefrac{1}{2}$)}
+	Monge asks us to transfer measure $\alpha$ to a new measure $\beta$ while also \underline{minimizing the total cost of transportation}.
+	\begin{gather}
+		\alpha(x) = \sum^n_{i=1} \bm{a}_i \chi_{x_i}(x), \quad \beta(y) = \sum^m_{i=1} \bm{b}_i \chi_{y_i}(y)
+	\end{gather} \pause
+	To quantify cost we have matrix $\bm{C} \in \mathbb{R}^{n \times m}$ which determines the cost of moving mass $x_i \rightarrow y_j~\forall i,j \in \{1, \ldots, n\}, \{1, \ldots, m\}$. \pause \newline \\
+	We define a map $T: \mathcal{X} \rightarrow \mathcal{Y}$ that tells us what to move where. This is our \textbf{Transport Plan}. \pause Now, we can formally define the assignment objective:
+	\begin{gather}
+		\min_{T} \frac{1}{n} \sum^n_{i=1} \bm{C}_{i, T(i)}
+	\end{gather} \pause
+	If $n = m,~T \in \text{Perm}(n)$.
+\end{frame}
+
+\begin{frame}{Monge's Assignment Problem ($\nicefrac{2}{2}$)}
+	Two visual examples of optimal transport:
+	\begin{center}
+		\includegraphics[width=.8\textwidth]{img/non-unique-optimal-matching}
+	\end{center} \pause
+	\textbf{Observations:}
+	\begin{enumerate}[label=\arabic*.]
+		\item The optimal transport map is not necessarily unique. \pause
+		\item The current formulation does not allow mass-splitting. \pause
+		\item If $m > n$ there is no feasible transport plan. \pause
+		\item Complexity scales sharply and optimization landscape is non-convex.
+	\end{enumerate}
+\end{frame}
+
+\begin{frame}{Push-Forward \& Pull-Back Operators}
+	For every valid transport map, we know that the following is satisfied:
+	\begin{gather}
+		\forall j \in \{1, \ldots, m\}, \quad \bm{b}_j = \sum_{i : T(i) = y_j} \bm{a}_i
+	\end{gather} \pause
+	We define the \textbf{Push-Forward operator} $T_\sharp$ to map a transport plan over an entire measure space.
+	\begin{gather}
+		T_\sharp: \mathcal{M}(X) \rightarrow \mathcal{M}(Y), \quad \beta = T_\sharp \alpha := \sum_i^n \bm{a}_i \chi_{T(x_i)}
+	\end{gather} \pause
+	The Push-Forward operator is `different' from a composition on $T$. That is the \textbf{Pull-Back operator}:
+	\begin{gather}
+		T^\sharp: \mathcal{C}(\mathcal{Y}) \rightarrow \mathcal{C}(\mathcal{X}), \quad T^\sharp g := g \circ T
+	\end{gather} \pause
+	Push-Forward and Pull-Back operators are related as follows:
+	\begin{gather}
+		\forall (\alpha, g) \in \mathcal{M}(\mathcal{X}) \times \mathcal{C}(\mathcal{Y}), \quad \int_\mathcal{Y} g d (T_\sharp \alpha) = \int_{\mathcal{X}} T^\sharp g d \alpha
+	\end{gather}
+\end{frame}
+
+\begin{frame}{Kantorovich Relaxation ($\nicefrac{1}{2}$)}
+	Kantorovich saw slide 9 of this presentation in the 1940's and decided to take matters in his own hands. \pause \newline \\
+
+	\textbf{Key Idea:} Relax determinism constraint $\rightarrow$ get probabilistic transport. \pause \newline \\
+
+	Basically, we \underline{allow mass splitting}. \pause Instead of a transport map, we define a family of coupling matrices where each $\bm{P} \in \mathbb{R}^{n \times m}_+$ is a valid coupling:
+	\begin{gather}
+		\mathcal{U}(\bm{a}, \bm{b}) := \left\{ \bm{P} \in \mathbb{R}^{n \times m}_+ : \underbrace{\bm{P} \mathbbm{1}_m = \bm{a}, \bm{P}^T \mathbbm{1}_n = \bm{b}}_{\text{mass conservation}} \right\}
+	\end{gather} \pause
+	Finally, our new optimization objective is as follows:
+	\begin{gather}
+		L_{\bm{C}}(a, b) := \min_{\bm{P} \in \mathcal{U}(a, b)} \langle \bm{C}, \bm{P} \rangle_F = \sum_{i, j} \bm{C}_{i,j} \bm{P}_{i, j}
+	\end{gather} \pause
+
+	\textbf{BIG Observation:} This is a linear program.
+\end{frame}
+
+\begin{frame}{Kantorovich Relaxation ($\nicefrac{2}{2}$)}
+	\begin{figure}[h!]
+		\centering
+		\begin{tabular}{@{}c@{\hspace{5mm}}c@{}}
+			\includegraphics[width=.3\textwidth]{img/matching-kantorovitch/matching}&
+			\includegraphics[width=.3\textwidth]{img/matching-kantorovitch/weighted}
+		\end{tabular}
+	\end{figure} \pause
+	\vspace{-1.5em}
+	\textbf{Observations:}
+	\begin{enumerate}[label=\arabic*.]
+		\item If we restrict $\bm{P}$ to the permutation matrix and have each weight be uniform, we recover Monge maps. \pause This restriction further implies:
+			\begin{gather}
+				L_{\bm{C}}(\nicefrac{\mathbbm{1}_n}{n}, \nicefrac{\mathbbm{1}_n}{n}) \leq \min_{T \in \text{Perm}(n)} \langle \bm{C}, \bm{P}_T \rangle
+			\end{gather} \pause
+			So, the Kantorovich Relaxation is \textbf{tight}. \pause
+		\item Each coupling $\bm{P}$ is symmetric: $\bm{P} \in \mathcal{U}(\bm{a}, \bm{b}) \iff \bm{P}^T \in \mathcal{U}(\bm{a}, \bm{b})$.
+	\end{enumerate}
+\end{frame}
+
+\section{Kantorovich Problem's Dual Formulation}
+
+\begin{frame}{Implications of Linear Programs}
+	The headline news from the Kantorovich Relaxation is that \textbf{our optimization objective is now a linear program}. \pause \newline \\
+
+	So what are the implications of this?
+	\begin{enumerate}[label=\arabic*.]
+		\item Can be solved in $\mathcal{O}(n^{2.5} \log n)$. \pause
+		\item The OT problem is now convex. \pause
+		\item The OT problem has a \textit{dual}, which is a linear program whose optimal value \underline{upper bounds} the optimal value of the primal. \pause
+		\item The optimal value for the primal problem \textit{equals} the dual $\iff$ the program has an optimal solution -- by \textbf{Strong Duality Theorem}. \pause
+		\item If we know an optimal solution exists, we can choose to solve the easier problem and get the same answer.
+	\end{enumerate}
+\end{frame}
+
+\begin{frame}{Kantorovich Dual}
+
+The Kantorovich problem is a constrained convex minimization problem, while the dual is a constrained concave maximization  problem. \pause \newline \\
+
+Like the primal, we still must define a feasible set:
+\begin{gather}
+	\mathcal{R}(\bm{C}) := \{ (\bm{f}, \bm{g}) \in \mathbb{R}^n \times \mathbb{R}^m : \bm{f} \oplus \bm{g} \leq \bm{C}\}
+\end{gather} \pause
+
+From there, we have the following dual problem:
+\begin{gather}
+	L_{\bm{C}}(\bm{a}, \bm{b}) = \max_{\bm{f}, \bm{g} \in \mathcal{R}(\bm{C})} \langle \bm{f}, \bm{a} \rangle + \langle \bm{g}, \bm{b} \rangle
+\end{gather}
+
+	The dual variables, here $\bm{f}, \bm{g}$ are called \underline{Kantorovich Potentials}.
+\end{frame}
+
+\begin{frame}{Intuitive Example of the Dual in Practice}
+	Consider a hypothetical where an operator wants to transfer goods from warehouses to factories. \pause \newline \\
+
+	One way to optimize costs would be to plan a route, by solving $L_{\bm{C}}(\bm{a}, \bm{b})$. \newline \\
+
+	If the optimal plan is too expensive to compute, what can be done? \pause \newline \\
+
+	One solution could be to \textit{outsource}. A vendor may present dual variables:
+	\begin{align}
+		\bm{f} &= \begin{bmatrix} \text{unit cost of pickup from warehouse}~i \end{bmatrix}^T \\
+		\bm{g} &= \begin{bmatrix} \text{unit cost to deliver to factory}~j \end{bmatrix}^T 
+	\end{align} \pause
+	To check the optimality of the vendor's prices, the operator can use $\bm{C}_{i,j}$:
+	\begin{gather}
+		\forall (i,j), \quad \bm{f}_i + \bm{g}_j \stackrel{?}{\leq} \bm{C}_{i,j} 
+	\end{gather}
+\end{frame}
+
+\section{Optimal Transport Induces a Distance}
+
+\begin{frame}{$p$-Wasserstein Distance ($\nicefrac{1}{2}$)}
+	If we fix $\bm{C}$, we can compare measures / histograms by the cost of transporting a measure / histogram to the other. \pause \newline \\
+	
+	We will consider $p$-norms for our cost computation: $\bm{C}_{i,j} = \| x_i  - y_j \|_p$ \pause \newline \\
+
+	Crucially, the optimal transport cost satisfies properties of a \underline{distance}. \pause \newline \\
+
+	Let $n = m,~p \geq 1, \bm{C} = \bm{D}^p = (\bm{D}^p_{i, j})_{i,j} \in \mathbb{R}^{n \times n}$. We can verify:
+	\begin{enumerate}[label=\arabic*.]
+		\item $\bm{D} \in \mathbb{R}^{n \times n}_+$ is symmetric. \pause
+		\item $\bm{D}_{i,j} = 0 \iff i = j$ \pause
+		\item $\forall (i, j, k) \in \{1, \ldots, n\}^3,~\bm{D}_{i,k} \leq \bm{D}_{i, j} + \bm{D}_{j, k}$ \pause
+	\end{enumerate}
+	~ \\
+	Using this, we define the \textbf{Wasserstein Distance}:
+	\begin{gather}
+		W_p (\bm{a}, \bm{b}) := L_{\bm{D}^p}(\bm{a}, \bm{b})^{\nicefrac{1}{p}}
+	\end{gather}
+\end{frame}
+
+\begin{frame}{$p$-Wasserstein Distance ($\nicefrac{2}{2}$)}
+	No visual this time, but we still have \textbf{observations}:
+	\begin{enumerate}[label=\arabic*.]
+		\item $W_p$ is expensive to compute; there is no closed-form solution. \pause
+		\item $W_p$ `lifts' $L_p$ distance from points to measures / histograms. \pause
+		\item (Not obvious) Over Euclidean space, we can \textbf{factor out translations}. \pause \newline \\
+			Let $T_\tau : x \mapsto x - \tau$ be the translation operator, $\bm{m}_\gamma := \int_{\mathcal{X}} x~d\gamma$ be the mean of measure $\gamma$. Now, we then have:
+			\begin{gather}
+				W_2({T_\tau}_{\sharp} \alpha, {T_{\tau'}}_{\sharp} \beta)^2 = W_2(\tilde{\alpha}, \tilde{\beta})^2 - \| \bm{m}_\alpha - \bm{m}_\beta \|^2
+			\end{gather}
+			Where $(\tilde{\alpha}, \tilde{\beta})$ are zero-centered versions of measures $(\alpha, \beta)$. \pause \newline \\
+			This distinction implies a two-fold comparison: the shapes of measures $\alpha$ and $\beta$, and the distance between their means.
+	\end{enumerate}
+\end{frame}
+
+\begin{frame}{Sliced Wasserstein Distance ($\nicefrac{1}{4}$)}
+	One special case of Optimal Transport is the 1-D case; $\mathcal{X} = \mathbb{R}$. Assuming uniform weights\footnote{generic case is more involved, but idea still holds.} and $c(x, y) = \| x - y \|^p_p$, we have:
+	\begin{gather}
+		\alpha = \frac{1}{n} \sum^n_{i=1} \chi_{x_i}, \quad \beta = \frac{1}{n} \sum^n_{i=1} \chi_{y_i}
+	\end{gather} \pause
+	W.L.O.G we can assume an ordering on each of the points:
+	\begin{gather}
+		x_1 \leq x_2 \leq \cdots \leq x_n \quad \text{and} \quad y_1 \leq y_2 \leq \cdots \leq y_n
+	\end{gather} \pause
+	Crucially, we can observe an optimal transport plan $T(x_i) = y_i$. \pause We now have closed form transport cost:
+	\vspace{-1em}
+	\begin{gather}
+		W_p (\alpha, \beta)^p = \frac{1}{n} \sum^n_{i=1} |x_i - y_i|^p
+	\end{gather} \pause
+	\vspace{1em}
+	This \textbf{reduces OT to a sorting problem}, and can be solved in $\mathcal{O}(n \log n)$.
+\end{frame}
+
+\begin{frame}{Sliced Wasserstein Distance ($\nicefrac{2}{4}$)}
+	Visual for discrete and generic cases:
+	\vspace{-1em}
+	\begin{center}
+		\includegraphics[width=.65\textwidth]{img/1d-schematic}
+	\end{center} \pause
+	\vspace{-1em}
+
+	This is nice, but somewhat limited. Can we extend this notion to $\mathbb{R}^n$? \pause \newline \\
+
+	\textbf{Idea;} let's \textit{slice and dice}:
+	\begin{enumerate}[label=\arabic*.]
+		\item Project $n$ features onto $d$ random directions. \pause We now have to solve $d$ 1-D OT problems. \pause
+		\item Sort $d$ lists to obtain $d$ optimal transport plans. \pause
+		\item Compute the average cost of transportation. \pause
+	\end{enumerate}
+	
+	\textbf{Caveat:} This is is no longer the $p$-Wasserstein Distance.
+\end{frame}
+
+\begin{frame}{Sliced Wasserstein Distance ($\nicefrac{3}{4}$)}
+	Here's what that looks visually, for a single direction:
+	\begin{figure}[h]
+		\begin{center}
+			\begin{tabular}{@{\hspace{0mm}} c @{}}
+				\scalebox{0.93}{
+					\begin{tikzpicture}
+						\begin{scope}[scale=2.0]
+							\draw[anchor=center] (0.3, -0.3) node {\scriptsize $p_V$};
+							\input{img/figure1_points_projection.tex}
+						\end{scope}
+
+						\begin{scope}[shift={(3.0,0.0)}, scale=2.0]
+							\draw[anchor=center] (0.3, -0.3) node {\scriptsize $\tilde p_V$};
+							\input{img/figure2_points_projection.tex}
+						\end{scope}
+
+						\begin{scope}[shift={(6.0,0.0)}, scale=2.0]
+							\draw[anchor=center] (0.35, -0.3) node {\scriptsize ${\|\text{sort}(p_V) - \text{sort}(\tilde p_V )}\|^2$};
+							\input{img/figure_loss.tex}
+						\end{scope}
+					\end{tikzpicture}
+				}
+			\end{tabular}
+		\end{center}
+	\end{figure} \pause
+
+	Crucially, Sliced Wasserstein Distance is \textbf{differentiable}, which enables us to use optimize transport cost using neural nets. E.g.~texture matching:
+	\vspace{-1em}
+	\begin{figure}[h]
+		\hspace{-1em}
+		\centering
+		\begin{tabular}{@{} c @{\hspace{0.5mm}} c @{\hspace{1mm}} c @{\hspace{0.5mm}} c @{\hspace{1mm}} c @{\hspace{0.5mm}} c @{}}
+			{\scriptsize\textbf{input}} & {\scriptsize\textbf{generated}} &
+			{\scriptsize\textbf{input}} & {\scriptsize\textbf{generated}} \\
+			\fbox{\includegraphics[height=1.6cm]{img/generative/input/leopard1_256.jpg}} &
+			\fbox{\includegraphics[height=1.6cm, trim=1415 0 0 0, clip]{img/generative/banner/leopard1_synth1x8leopard1_arch-TextureNetV1_loss-VGGnormalized-Slicing_rotation-random_always_LR-1_00e-03_B-8.jpg}} &
+			\fbox{\includegraphics[height=1.6cm]{img/generative/input/skin256.jpg}} &
+			\fbox{\includegraphics[height=1.6cm, trim=1415 0 0 0, clip]{img/generative/banner/skin_synth1x8skin_arch-TextureNetV1_loss-VGGnormalized-Slicing_rotation-random_always_LR-1_00e-03_B-8.jpg}}
+		\end{tabular}
+	\end{figure}
+
+
+
+\end{frame}
+
+\begin{frame}{Sliced Wasserstein Distance ($\nicefrac{4}{4}$)}
+	\textbf{Spatial Priors:} Projections act on point clouds, which rids spatial information in learning the input distribution. \pause \newline \\
+
+	A trick to recover spatial structure is to cluster-sort by spatial dimension:
+	\setlength{\fboxsep}{0pt}\setlength{\fboxrule}{0.8pt}
+	\begin{figure}[!h]
+		\begin{center}
+			\hspace{-15mm}
+			\begin{tikzpicture}
+				% Target
+				\begin{scope}
+					\draw (0.85, 1.4) node[anchor=center] {\scriptsize \textbf{nD input}};
+					\begin{scope}[shift={(0.0,-0.5)}, scale=1.7]
+						\input{img/figure4_image1.tex}
+					\end{scope}
+
+					% Plots
+					\begin{scope}[shift={(1.8,-0.5)}, scale=0.3]
+						\input{img/figure4_plot1.tex}
+					\end{scope}
+
+
+					\draw[anchor=north] (0.8,-0.45) node {\tiny features};
+					\draw[anchor=north] (2.9,-0.45) node {\tiny distribution};
+				\end{scope}
+				\hspace{15mm}
+				% Target
+				\begin{scope}[shift={(4.,0.0)}]
+					\draw (0.8, 1.4) node[anchor=center] {\scriptsize \textbf{optimized nD}};
+					\begin{scope}[shift={(0.0,-0.5)}, scale=1.7]
+						\input{img/figure1_image.tex}
+					\end{scope}
+
+					% Plots
+					\begin{scope}[shift={(1.8,-0.5)}, scale=0.3]
+						\input{img/figure4_plot1.tex}
+					\end{scope}
+
+					\draw[anchor=north] (0.8,-0.45) node {\tiny features};
+					\draw[anchor=north] (2.9,-0.45) node {\tiny distribution};
+				\end{scope}
+			\end{tikzpicture}
+			\\
+			\hspace{-18mm}
+			\begin{tikzpicture}
+				% Target + tag
+				\begin{scope}[shift={(6.5,0.0)}]
+					\begin{scope}[shift={(0.0,0.0)}]
+						\draw (0.85, 1.5) node[anchor=center] {\scriptsize \textbf{nD input + 1D tag}};
+
+						\begin{scope}[shift={(0.1,-0.5)}, scale=1.7]
+							\input{img/figure4_image4b.tex}
+						\end{scope}
+						\begin{scope}[shift={(0.0,-0.4)}, scale=1.7]
+							\input{img/figure4_image1.tex}
+						\end{scope}
+
+						% Plots
+						\begin{scope}[shift={(1.95,-0.55)}, scale=0.4]
+							\input{img/figure4_plot3.tex}
+						\end{scope}
+						\draw[anchor=north] (0.8,-0.45) node {\tiny features + tag};
+						\draw[anchor=north] (2.9,-0.45) node {\tiny distribution};
+					\end{scope}
+					\hspace{20mm}
+					% Target + tag
+					\begin{scope}[shift={(3.70,0.0)}]
+						\draw (0.9, 1.5) node[anchor=center] {\scriptsize \textbf{optimized (n+1)D}};
+
+						\begin{scope}[shift={(0.1,-0.5)}, scale=1.7]
+							\input{img/figure4_image4b.tex}
+						\end{scope}
+						\begin{scope}[shift={(0.0,-0.4)}, scale=1.7]
+							\input{img/figure4_image4.tex}
+						\end{scope}
+
+						% Plots
+						\begin{scope}[shift={(1.95,-0.55)}, scale=0.4]
+							\input{img/figure4_plot3.tex}
+						\end{scope}
+						\draw[anchor=north] (0.8,-0.45) node {\tiny features + tag};
+						\draw[anchor=north] (2.9,-0.45) node {\tiny distribution};
+					\end{scope}
+				\end{scope}
+			\end{tikzpicture}
+		\end{center}
+	\end{figure}
+
+
+\end{frame}
+
+\section{Wasserstein GANs}
+
+\begin{frame}{Wasserstein GAN Setup}
+	\begin{columns}
+		\begin{column}{.4\textwidth}
+			\begin{center}
+				\includegraphics[width=\textwidth]{img/gan.png}
+			\end{center}
+		\end{column}
+		\begin{column}{.6\textwidth}
+			GANs have the following setup:
+
+			\textbf{Discriminator} $f_\xi: \mathbb{R}^{C \times D_1 \times D_2} \rightarrow [0, 1]$
+			\textbf{Generator} $G_\theta: \mathbb{R}^{Z} \rightarrow \mathbb{R}^{C \times D_1 \times D_2}$ \pause \newline \\
+
+			The difference between generated and target distribution is minimized using divergences. \pause \newline \\
+
+			\textbf{Q:} Are gradients always informative? \pause \\
+			\textbf{A:} No; consider parallel lines infinitesimally close to one another. $KL = \infty,~JS = \log 2$ \pause \newline \\
+
+			Instead, what if we use \textit{distance}? \pause \newline \\
+			New \textbf{Discriminator} $f_\xi: \mathbb{R}^{C \times D_1 \times D_2} \rightarrow \mathbb{R}$
+			which models Wasserstein Distance.
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}{Training WGANs}
+	\begin{algorithm}[H]
+		\caption{WGAN training algorithm. $\eta = 10^{-5},~c=0.01,~n_{\text{critic}}=5,~n_{\text{iter}} = 500$.}\label{algo::wgan}
+		\begin{algorithmic}[1]
+			\For{$t = 0, ..., n_{\text{iter}}$}
+			\For{$t = 0, ..., n_{\text{critic}}$}
+			\State Sample $\{x_i\}_{i=1}^B \sim \mathcal{D}^B$ a batch from the real data.
+			\State Sample $\{z_i\}_{i=1}^B \sim \mathcal{P}^B$ a batch of prior samples.
+			\State $g_\xi \gets \nabla_\xi \left[\frac{1}{B}\sum_{i=1}^B f_\xi(x_i) - \frac{1}{B} \sum_{i=1}^B f_\xi(G_\theta(z_i)) \right]$
+			\State $\xi \gets \xi + \eta \cdot \text{Adam}(g_\xi) $
+			\State $\xi \gets \text{clip}(\xi, -c, c) $
+			\EndFor
+			\State Sample $\{z_i\}_{i=1}^B \sim \mathcal{P}(z)$ a batch of prior samples.
+			\State $g_\theta \gets -\nabla_\theta \frac{1}{B} \sum_{i=1}^B f_\xi(G_\theta(z_i))$ 
+			\State $\theta \gets \theta - \eta \cdot \text{Adam}(g_\theta)$
+			\EndFor
+		\end{algorithmic}
+	\end{algorithm}
+\end{frame}
+
+\begin{frame}{Critic Improvements from Wasserstein GANs}
+	\begin{center}
+		\includegraphics[width=\textwidth]{img/wgan_grad_compare.png}
+	\end{center}
+\end{frame}
+
+\begin{frame}{Code Example -- Training WGANs}
+	\begin{center}
+		If you can view this screen, I am making a mistake.
+	\end{center}
+\end{frame}
+
+\begin{frame}{Thank you!}
+	\begin{center}
+		Have an awesome rest of your day!
+	\end{center}
+	\begin{center}
+		\textbf{Slides:} \url{https://jinen.setpal.net/slides/ot.pdf}
+	\end{center}
+\end{frame}
+
+\end{document}
