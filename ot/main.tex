@@ -195,7 +195,7 @@
 \end{frame}
 
 \begin{frame}{Kantorovich Relaxation ($\nicefrac{1}{2}$)}
-	Kantorovich saw slide 9 of this presentation in the 1940's and decided to take matters in his own hands. \pause \newline \\
+	Kantorovich saw slide 10 of this presentation in the 1940's and decided to take matters in his own hands. \pause \newline \\
 
 	\textbf{Key Idea:} Relax determinism constraint $\rightarrow$ get probabilistic transport. \pause \newline \\
 
@@ -294,7 +294,7 @@ From there, we have the following dual problem:
 	\begin{enumerate}[label=\arabic*.]
 		\item $\bm{D} \in \mathbb{R}^{n \times n}_+$ is symmetric. \pause
 		\item $\bm{D}_{i,j} = 0 \iff i = j$ \pause
-		\item $\forall (i, j, k) \in \{1, \ldots, n\}^3,~\bm{D}_{i,k} \leq \bm{D}_{i, j} + \bm{D}_{j, k}$ \pause
+		\item $\forall (i, j, k) \in \{1, \ldots, n\},~\bm{D}_{i,k} \leq \bm{D}_{i, j} + \bm{D}_{j, k}$ \pause
 	\end{enumerate}
 	~ \\
 	Using this, we define the \textbf{Wasserstein Distance}:
@@ -311,7 +311,7 @@ From there, we have the following dual problem:
 		\item (Not obvious) Over Euclidean space, we can \textbf{factor out translations}. \pause \newline \\
 			Let $T_\tau : x \mapsto x - \tau$ be the translation operator, $\bm{m}_\gamma := \int_{\mathcal{X}} x~d\gamma$ be the mean of measure $\gamma$. Now, we then have:
 			\begin{gather}
-				W_2({T_\tau}_{\sharp} \alpha, {T_{\tau'}}_{\sharp} \beta)^2 = W_2(\tilde{\alpha}, \tilde{\beta})^2 - \| \bm{m}_\alpha - \bm{m}_\beta \|^2
+				W_2({T_\tau}_{\sharp} \alpha, {T_{\tau'}}_{\sharp} \beta)^2 = W_2(\tilde{\alpha}, \tilde{\beta})^2 + \| \bm{m}_\alpha - \bm{m}_\beta \|^2
 			\end{gather}
 			Where $(\tilde{\alpha}, \tilde{\beta})$ are zero-centered versions of measures $(\alpha, \beta)$. \pause \newline \\
 			This distinction implies a two-fold comparison: the shapes of measures $\alpha$ and $\beta$, and the distance between their means.
@@ -330,7 +330,7 @@ From there, we have the following dual problem:
 	Crucially, we can observe an optimal transport plan $T(x_i) = y_i$. \pause We now have closed form transport cost:
 	\vspace{-1em}
 	\begin{gather}
-		W_p (\alpha, \beta)^p = \frac{1}{n} \sum^n_{i=1} |x_i - y_i|^p
+		W_p (\alpha, \beta)^p = \left(\frac{1}{n} \sum^n_{i=1} |x_i - y_i|^p\right)^{\nicefrac{1}{p}}
 	\end{gather} \pause
 	\vspace{1em}
 	This \textbf{reduces OT to a sorting problem}, and can be solved in $\mathcal{O}(n \log n)$.
@@ -529,12 +529,12 @@ From there, we have the following dual problem:
 			\State Sample $\{x_i\}_{i=1}^B \sim \mathcal{D}^B$ a batch from the real data.
 			\State Sample $\{z_i\}_{i=1}^B \sim \mathcal{P}^B$ a batch of prior samples.
 			\State $g_\xi \gets \nabla_\xi \left[\frac{1}{B}\sum_{i=1}^B f_\xi(x_i) - \frac{1}{B} \sum_{i=1}^B f_\xi(G_\theta(z_i)) \right]$
-			\State $\xi \gets \xi + \eta \cdot \text{Adam}(g_\xi) $
-			\State $\xi \gets \text{clip}(\xi, -c, c) $
+			\State $\xi \gets \xi + \eta \cdot \text{RMSProp}(g_\xi) $
+			\State $\xi \gets \text{clip}(\xi, [-c, +c]) $
 			\EndFor
 			\State Sample $\{z_i\}_{i=1}^B \sim \mathcal{P}(z)$ a batch of prior samples.
 			\State $g_\theta \gets -\nabla_\theta \frac{1}{B} \sum_{i=1}^B f_\xi(G_\theta(z_i))$ 
-			\State $\theta \gets \theta - \eta \cdot \text{Adam}(g_\theta)$
+			\State $\theta \gets \theta - \eta \cdot \text{RMSProp}(g_\theta)$
 			\EndFor
 		\end{algorithmic}
 	\end{algorithm}
