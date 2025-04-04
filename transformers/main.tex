@@ -23,7 +23,7 @@
 %------------------------------------------------------------
 %This block of code defines the information to appear in the
 %Title page
-\title[The Transformer Architecture]{Attention Is All You Need:}
+\title[Transformers]{Attention Is All You Need:}
 
 \subtitle{Deriving the Seminal Transformer Architecture from First Principles}
 
@@ -67,13 +67,13 @@
 \begin{frame}{Glossary}
 	Some context-relevant terms:
 	\begin{enumerate}[label=\alph*.]
-		\item \textbf{Neuron:} The unit of a nueral network $y = \sigma(XW)$ \pause
-		\item \textbf{Logit:} Pre-activation scores for the \textit{final layer}. \pause 
-		\item \textbf{Dot / Inner Product:} $\langle a, b \rangle = \sum^N_{i=1}a_ib_i $ \pause 
-		\item \textbf{Matrix Multiplication:} For $X \in \mathbb{R}^{a \times b},\ Y \in \mathbb{R}^{b \times c}$, $Z = XY \in \mathbb{R}^{a \times c}\ s.t.\ z_{ij} = \sum^b_{k=1} a_{ik} b_{kj}$ \pause 
-		\item \textbf{Activation:} Non-linear function over the output of matrix multiplication. \pause 
-		\item \textbf{Gradient:} $\nabla_w \mathcal{L}(w)$, derivative of $\mathcal{L}: \mathbb{R}^a \rightarrow \mathbb{R}$ \pause 
-		\item \textbf{Latent Vector:} $h^{(\ell)}$, intermediary output from within a neural network. \pause 
+		\item \textbf{Neuron:} The unit of a nueral network $y = \sigma(XW)$
+		\item \textbf{Logit:} Pre-activation scores for the \textit{final layer}.
+		\item \textbf{Dot / Inner Product:} $\langle a, b \rangle = \sum^N_{i=1}a_ib_i$
+		\item \textbf{Matrix Multiplication:} For $X \in \mathbb{R}^{a \times b},\ Y \in \mathbb{R}^{b \times c}$, $Z = XY \in \mathbb{R}^{a \times c}\ s.t.\ z_{ij} = \sum^b_{k=1} a_{ik} b_{kj}$
+		\item \textbf{Activation:} Non-linear function over the output of matrix multiplication.
+		\item \textbf{Gradient:} $\nabla_w \mathcal{L}(w)$, derivative of $\mathcal{L}: \mathbb{R}^a \rightarrow \mathbb{R}$
+		\item \textbf{Latent Vector:} $h^{(\ell)}$, intermediary output from within a neural network.
 		\item \textbf{Embedding:} A look-up table that translates categorical values (words) to vectors.
 	\end{enumerate}
 \end{frame}
@@ -119,11 +119,13 @@
 	One way to improve this is by incorporating \textit{attention} into RNNs.\footnote{\tiny \url{https://distill.pub/2016/augmented-rnns/\#attentional-interfaces}} \pause \newline \\
 
 	\textbf{Q:} Well, what does it mean to ``incorporate attention''? \pause \\
-	\textbf{A:} For latent vectors $\{\ell_i\}^N_{i=1},\ r = \sum^N_{i=1} \ell_i \rightarrow \sum^N_{i=1} w_i \ell_i$, \\
-	where $\sum^N_{i=1}w_i = 1,\ w_i \geq\ \forall i$ \pause
+	\textbf{A:} For latent vectors $\{\ell_i\}^N_{i=1}$:
+	\begin{gather}
+		a^{\langle \ell \rangle} = \sum^{N}_{i=1} w_i^{(\ell)} \ell_i \quad \text{where} \quad \sum^N_{i=1}w_i^{(\ell)} = 1,\ w_i^{(\ell)} \geq 0 ~\forall i, \ell
+	\end{gather} \pause
 
 	\begin{center}
-		\includegraphics[width=\textwidth]{img/rnn-attention.png}
+		\includegraphics[width=.8\textwidth]{img/rnn-attention.png}
 	\end{center}
 \end{frame}
 
@@ -149,25 +151,34 @@
 	A consequence of this setup, howeveer is that we are not considering the order of the tokens anymore. It is \textbf{permutation invariant}. \pause \newline \\
 
 	To resolve this, we add positional encodings to each word embedding:
+	\vspace{-.75em}
 	\begin{gather}
 		PE_{(pos, 2i)} = \sin(\nicefrac{pos}{1E4^{\nicefrac{2i}{d_{model}}}}) \\
 		PE_{(pos, 2i+1)} = \cos(\nicefrac{pos}{1E4^{\nicefrac{2i}{d_{model}}}})
 	\end{gather}
 	\begin{center}
+		\vspace{-.75em}
 		\includegraphics[width=.6\textwidth]{img/positional_encoding.png}
-	\end{center}
+		\vspace{-.75em}
+	\end{center} \pause
+	Modern-day references: \textbf{\href{https://arxiv.org/abs/2104.09864}{Rotary Positional Encodings (RoPE)}}.
 \end{frame}
 
 \begin{frame}{Multi-Headed Setting}
 	Each block of self-attention constitutes it's own head. \pause \newline \\
 
-	\textit{Intuitively}, a different set of information may be desired from the same input. \\
-	e.g: NER, Sentence-Structure Decomposition, POS tagging -- any valuable information that can inform the output. \pause \newline \\
+	Intuitively, \textbf{multiple interpretations are desired from a given input}. \\
+	e.g: NER, Sentence-Structure Decomposition, POS tagging. \pause \newline \\
 
 	Therefore, we instantiate \textit{multiple} heads within each layer, and concatenate to construct a final output represetnation.
 	\begin{gather}
 		MHA = \text{Concat}(\{h_i\}^H_{i=1})W_O
-	\end{gather}
+	\end{gather} \pause
+	To keep computational costs consistent, we proportionally reduce the hidden dimension for each head:
+	\begin{gather}
+		W_{K, i}, W_{Q, i}, W_{V, i} \in \mathbb{R}^{d_{in} \times \nicefrac{d_{out}}{n_{head}}} \quad \forall i \in \{1, \ldots, n_{head}\}
+	\end{gather} \pause
+	Modern-day references: \textbf{\href{https://arxiv.org/abs/2205.14135}{Flash Attention}}, \textbf{\href{https://arxiv.org/abs/2502.07864}{Multi-Head Latent Attention}}.
 \end{frame}
 
 \begin{frame}{Self-Attention ($\nicefrac{2}{2}$)}
@@ -184,7 +195,7 @@
 \end{frame}
 
 \begin{frame}{Feedforward MLP}
-	Thanks to attention, we now have an updated representation of our input. We now need to perform operations on this contextualized input to make inferences about our actual objective. \pause \newline \\
+	Using attention, we now have an updated representation of our input. We now need to perform operations on this contextualized input to make inferences about our actual objective. \pause \newline \\
 
 	For this, a two-layer MLP is instantiated that expands and consequently contracts the input dimension.
 	\begin{gather}
@@ -213,16 +224,16 @@
 \end{frame}
 
 \begin{frame}{Inference \& Training}
-	The output of the model during a single forward pass is a token. \pause This token is then added to the context window, and the forward pass is run once again. This creates the final output, as a sentence. \pause \newline \\
+	\textbf{Autoregressive Sampling:} The output of the model during a single forward pass is a token. added to the input, and the forward pass is run once again. This creates the final output, detokenized to a sentence. \pause \newline \\
 
-	For training, we exploit GPU parallelism, since each token sequence $\{x_i\}^T_{t=1}$ contains $T-1$ targets.
+	\textbf{Training:} Each token sequence $\{x_i\}^T_{t=1}$ contains $T-1$ targets.
 	\begin{gather}
-		p\left(x_t | \{x_i\}^{t-1}_{i=1}\right) = x_t\ \forall t \in \{2, \ldots, T\}
+		\mathcal{L}_{CE}(\{x\}^T_{t=1}, \theta) = \frac{1}{T-1}\sum^{T-1}_{t' = 1} \mathcal{L}_{CE}(f_\theta(\{x_{t'+1} | x_t\}^{t'}_{t=1}), x_{t' + 1})
 	\end{gather} \pause
-	However, a consequence of this is that attention can \textit{look into the future}. \pause We prevent this by applying a causal mask:
+	However, training these blocks means attention would be able to \textit{look into the future}. \pause We correct this by applying an upper-triangular causal mask:
 
 	\begin{center}
-		\includegraphics[width=.6\textwidth]{img/causal-mask.png}
+		\includegraphics[width=.5\textwidth]{img/causal-mask.png}
 	\end{center}
 \end{frame}
 
