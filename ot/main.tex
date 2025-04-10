@@ -34,12 +34,12 @@
 
 \subtitle{``Moving Sandcastles in the Air''}
 
-\author[ECE ML Reading Group] % optional
+\author[Machine Learning @ Purdue] % optional
 {J.~Setpal} 
 
-\date{March 26, 2025}
+\date{April 10, 2025}
 
-\titlegraphic{\includegraphics[width=6cm]{img/mrmonge.png}}
+\titlegraphic{\includegraphics[width=7cm]{../shared/logo-long.pdf}}
 
 %End of title page configuration block
 %------------------------------------------------------------
@@ -184,7 +184,7 @@
 	\begin{gather}
 		T_\sharp: \mathcal{M}(X) \rightarrow \mathcal{M}(Y), \quad \beta = T_\sharp \alpha := \sum_i^n \bm{a}_i \chi_{T(x_i)}
 	\end{gather} \pause
-	The Push-Forward operator is `different' from a composition on $T$. That is the \textbf{Pull-Back operator}:
+	The Push-Forward operator is different from a composition on $T$. That is the \textbf{Pull-Back operator}:
 	\begin{gather}
 		T^\sharp: \mathcal{C}(\mathcal{Y}) \rightarrow \mathcal{C}(\mathcal{X}), \quad T^\sharp g := g \circ T
 	\end{gather} \pause
@@ -290,7 +290,7 @@ From there, we have the following dual problem:
 
 	Crucially, the optimal transport cost satisfies properties of a \underline{distance}. \pause \newline \\
 
-	Let $n = m,~p \geq 1, \bm{C} = \bm{D}^p = (\bm{D}^p_{i, j})_{i,j} \in \mathbb{R}^{n \times n}$. We can verify:
+	Let $n = m,~p \geq 1, \bm{C} = \bm{D}^p \in \mathbb{R}^{n \times n}$. We can verify:
 	\begin{enumerate}[label=\arabic*.]
 		\item $\bm{D} \in \mathbb{R}^{n \times n}_+$ is symmetric. \pause
 		\item $\bm{D}_{i,j} = 0 \iff i = j$ \pause
@@ -319,7 +319,7 @@ From there, we have the following dual problem:
 \end{frame}
 
 \begin{frame}{Sliced Wasserstein Distance ($\nicefrac{1}{4}$)}
-	One special case of Optimal Transport is the 1-D case; $\mathcal{X} = \mathbb{R}$. Assuming uniform weights\footnote{generic case is more involved, but idea still holds.} and $c(x, y) = \| x - y \|^p_p$, we have:
+	One special case of Optimal Transport is the 1-D case; $\mathcal{X} = \mathbb{R}$. Assuming uniform weights\footnote{generic case is more involved, intuition still holds.} and $c(x, y) = \| x - y \|^p_p$, we have:
 	\begin{gather}
 		\alpha = \frac{1}{n} \sum^n_{i=1} \chi_{x_i}, \quad \beta = \frac{1}{n} \sum^n_{i=1} \chi_{y_i}
 	\end{gather} \pause
@@ -337,7 +337,7 @@ From there, we have the following dual problem:
 \end{frame}
 
 \begin{frame}{Sliced Wasserstein Distance ($\nicefrac{2}{4}$)}
-	Visual for discrete and generic cases:
+	Visual for uniform and generic cases:
 	\vspace{-1em}
 	\begin{center}
 		\includegraphics[width=.65\textwidth]{img/1d-schematic}
